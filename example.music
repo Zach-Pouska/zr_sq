@@ -1,0 +1,19 @@
+# song.txt
+# format: type 
+# 	   - waveform: freq dur vol  
+# 	   - rest: dur
+bpm 100
+samplerate 44100
+
+# {
+sin 261.63 0.1 0.8 
+rest 0.2
+sin 523.26 0.1 0.8 
+rest 0.2
+
+
+#sqr 329.63 0.5 0.8 
+#rest 0.2
+#saw 392.00 0.5 0.7 
+#rest 0.4
+
