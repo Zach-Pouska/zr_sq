@@ -34,7 +34,9 @@ fn generate_note_samples(
 
 /// Synthesize the entire song into a mono audio buffer (f32 samples).
 pub fn synthesize_song(song: &Song) -> Vec<f32> {
+    let mut current_time = 0; // integer value for the current sample - tracks when new sounds are
     let mut buffer = Vec::new();
+
     for event in &song.events {
         match event {
             Event::Note { frequency, duration_seconds, volume, waveform } => {
@@ -45,10 +47,19 @@ pub fn synthesize_song(song: &Song) -> Vec<f32> {
                     *waveform,
                     song.samplerate,
                 );
-                buffer.extend(samples);
+                let length = samples.len();
+                let bufferlength = buffer.len();
+                if length+current_time > bufferlength {
+                    buffer.extend(vec![0.0; current_time + length -bufferlength]); // extend by number of necessary samples,
+                }
+                // and then additively introduce the sound with a slice
+                for i in 0..length {
+                    buffer[i+current_time] = buffer[i+current_time] + samples[i];
+                }
             }
             Event::Rest { duration_seconds } => {
                 let silence_samples = (*duration_seconds * song.samplerate as f32) as usize;
+                current_time += silence_samples;
                 buffer.extend(vec![0.0; silence_samples]);
             }
         }

@@ -4,16 +4,63 @@
 # 	   - rest: dur
 bpm 100
 samplerate 44100
+#samplerate 800
+#samplerate 5000 
+#volume 0.5 # - To-Do
 
 # {
-sin 261.63 0.1 0.8 
-rest 0.2
-sin 523.26 0.1 0.8 
-rest 0.2
-
-
-#sqr 329.63 0.5 0.8 
+#saw 440.0 5.0 0.8 
 #rest 0.2
-#saw 392.00 0.5 0.7 
-#rest 0.4
+
+sin 60 0.5 0.8
+r 0.5
+
+sin 55 0.5 0.8
+rest 0.5
+
+sin 50 0.5 0.8
+rest 0.5
+
+sin 45 0.5 0.8
+
+
+
+#sqr 100 0.02 0.8
+#rest 0.5
+#sqr 100 0.02 0.8
+#rest 0.15
+#sqr 100 0.02 0.8
+#
+#sin 55 1 0.8
+#rest 0.5
+#sqr 100 0.02 0.8
+#rest 0.5
+#sqr 100 0.02 0.8
+#rest 0.15
+#sqr 100 0.02 0.8
+#rest 0.15
+#sqr 50 0.02 0.8
+#
+#
+#sin 50 1 0.8
+#rest 0.5
+#
+#sqr 100 0.02 0.8
+#rest 0.5
+#sqr 100 0.02 0.8
+#rest 0.15
+#sqr 100 0.02 0.8
+#
+#sin 45 1 0.8
+#rest 0.5
+#sqr 100 0.02 0.8
+#rest 0.5
+#sqr 100 0.02 0.8
+#rest 0.15
+#sqr 100 0.02 0.8
+#rest 0.15
+#sqr 50 0.02 0.8
+
+
+
 

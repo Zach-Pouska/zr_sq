@@ -7,7 +7,7 @@ mod synthesis;
 use file_parse::parse_song_from_file;
 use synthesis::synthesize_song;
 
-use rodio::{DeviceSinkBuilder, source::Source};
+use rodio::{source::Source};
 //use hound::{WavSpec, WavWriter, SampleFormat};
 use hound::{WavSpec, WavWriter};
 use std::time::Duration;
@@ -48,12 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// ---------- Playback and WAV export functions (unchanged) ----------
 fn play_audio(samples: &[f32], samplerate: u32) -> Result<(), Box<dyn std::error::Error>> {
-    let _stream = DeviceSinkBuilder::open_default_sink()?;
-    let mixer = _stream.mixer();
-
-    println!("Beginning playback");
     struct AudioBufferSource {
         samples: Arc<Vec<f32>>,
         pos: usize,
@@ -98,9 +93,18 @@ fn play_audio(samples: &[f32], samplerate: u32) -> Result<(), Box<dyn std::error
         pos: 0,
         samplerate,
     };
+    
+    let handle = rodio::DeviceSinkBuilder::open_default_sink().expect("open default audio stream");
+    let mixer = handle.mixer();
+    let _player = rodio::Player::connect_new(&mixer);
 
-    let duration = source.total_duration().unwrap_or(Duration::from_secs(1));
+    println!("Beginning playback");
+
+    let duration = source.total_duration().unwrap_or(Duration::from_secs(10));
+    println!("Duration: {:?}", duration);
+    //handle.mixer().add(source);
     mixer.add(source);
+
     std::thread::sleep(duration);
 
     println!("Ending playback");

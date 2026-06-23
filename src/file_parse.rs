@@ -50,65 +50,13 @@ impl From<std::io::Error> for ParseError {
 impl Waveform {
     pub fn from_str(s: &str) -> Result<Self, ParseError> {
         match s.trim().to_lowercase().as_str() {
-            "sin" | "sine" => Ok(Waveform::Sine),
-            "sqr" | "square" => Ok(Waveform::Square),
+            "sin" | "sine"     => Ok(Waveform::Sine),
+            "sqr" | "square"   => Ok(Waveform::Square),
             "saw" | "sawtooth" => Ok(Waveform::Sawtooth),
             "tri" | "triangle" => Ok(Waveform::Triangle),
             other => Err(ParseError::UnknownWaveform(other.to_string())),
         }
     }
-}
-
-/// Parse a single event line.
-/// Now supports:
-///   - Note:   <waveform> <freq> <dur> <vol>   (e.g., "sin 261.63 0.5 0.8")
-///   - Rest:   rest <dur>
-fn parse_event(line: &str, line_num: usize) -> Result<Event, ParseError> {
-    let parts: Vec<&str> = line.split_whitespace().collect();
-    if parts.is_empty() {
-        return Err(ParseError::InvalidLine {
-            line: line_num,
-            message: "Empty line".to_string(),
-        });
-    }
-
-    let first = parts[0].to_lowercase();
-
-    // Handle rest
-    if first == "rest" {
-        if parts.len() != 2 {
-            return Err(ParseError::InvalidLine {
-                line: line_num,
-                message: format!("Expected 'rest dur', got {} tokens", parts.len()),
-            });
-        }
-        let dur = parts[1].parse::<f32>()
-            .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
-        return Ok(Event::Rest { duration_seconds: dur });
-    }
-
-    // Otherwise, it's a note: waveform_shorthand freq dur vol
-    if parts.len() != 4 {
-        return Err(ParseError::InvalidLine {
-            line: line_num,
-            message: format!("Expected '<waveform> freq dur vol', got {} tokens", parts.len()),
-        });
-    }
-
-    let waveform = Waveform::from_str(parts[0])?;
-    let freq = parts[1].parse::<f32>()
-        .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
-    let dur = parts[2].parse::<f32>()
-        .map_err(|_| ParseError::InvalidNumber(parts[2].to_string()))?;
-    let vol = parts[3].parse::<f32>()
-        .map_err(|_| ParseError::InvalidNumber(parts[3].to_string()))?;
-
-    Ok(Event::Note {
-        frequency: freq,
-        duration_seconds: dur,
-        volume: vol,
-        waveform,
-    })
 }
 
 pub fn parse_song_from_file<P: AsRef<Path>>(path: P) -> Result<Song, ParseError> {
@@ -124,52 +72,118 @@ pub fn parse_song_from_file<P: AsRef<Path>>(path: P) -> Result<Song, ParseError>
         let line = line_result?;
         let trimmed = line.trim();
 
+        // Skip blanks and comments
         if trimmed.is_empty() || trimmed.starts_with('#') {
             continue;
         }
 
-        // Parse headers if we haven't got both yet
-        if bpm.is_none() || samplerate.is_none() {
-            let parts: Vec<&str> = trimmed.split_whitespace().collect();
-            if parts.len() >= 2 {
-                match parts[0].to_lowercase().as_str() {
-                    "bpm" => {
-                        if bpm.is_some() {
-                            return Err(ParseError::InvalidLine {
-                                line: line_num,
-                                message: "Duplicate 'bpm' line".to_string(),
-                            });
-                        }
-                        let val = parts[1].parse::<f32>()
-                            .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
-                        bpm = Some(val);
-                        continue;
-                    }
-                    "samplerate" => {
-                        if samplerate.is_some() {
-                            return Err(ParseError::InvalidLine {
-                                line: line_num,
-                                message: "Duplicate 'samplerate' line".to_string(),
-                            });
-                        }
-                        let val = parts[1].parse::<u32>()
-                            .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
-                        samplerate = Some(val);
-                        continue;
-                    }
-                    _ => {} // not a header, fall through to event parsing
-                }
-            }
+        let parts: Vec<&str> = trimmed.split_whitespace().collect();
+        if parts.is_empty() {
+            return Err(ParseError::InvalidLine {
+                line: line_num,
+                message: "Empty line".to_string(),
+            });
         }
 
-        // Parse as an event
-        let event = parse_event(trimmed, line_num)?;
-        events.push(event);
+        let first = parts[0].to_lowercase();
+
+        // ----- main match – one arm per command type -----
+        match first.as_str() {
+            "bpm" => {
+                if bpm.is_some() {
+                    return Err(ParseError::InvalidLine {
+                        line: line_num,
+                        message: "Duplicate 'bpm' line".to_string(),
+                    });
+                }
+                if parts.len() < 2 {
+                    return Err(ParseError::InvalidLine {
+                        line: line_num,
+                        message: "Missing value for 'bpm'".to_string(),
+                    });
+                }
+                let val = parts[1]
+                    .parse::<f32>()
+                    .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
+                bpm = Some(val);
+            }
+
+            "samplerate" => {
+                if samplerate.is_some() {
+                    return Err(ParseError::InvalidLine {
+                        line: line_num,
+                        message: "Duplicate 'samplerate' line".to_string(),
+                    });
+                }
+                if parts.len() < 2 {
+                    return Err(ParseError::InvalidLine {
+                        line: line_num,
+                        message: "Missing value for 'samplerate'".to_string(),
+                    });
+                }
+                let val = parts[1]
+                    .parse::<u32>()
+                    .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
+                samplerate = Some(val);
+            }
+
+            "rest" | "r" => {
+                if parts.len() != 2 {
+                    return Err(ParseError::InvalidLine {
+                        line: line_num,
+                        message: format!(
+                            "Expected 'rest dur', got {} tokens",
+                            parts.len()
+                        ),
+                    });
+                }
+                let dur = parts[1]
+                    .parse::<f32>()
+                    .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
+                events.push(Event::Rest { duration_seconds: dur });
+            }
+
+            // Anything else is assumed to be a note: <waveform> freq dur vol
+            _ => {
+                let waveform = Waveform::from_str(parts[0])?;
+                if parts.len() != 4 {
+                    return Err(ParseError::InvalidLine {
+                        line: line_num,
+                        message: format!(
+                            "Expected '<waveform> freq dur vol', got {} tokens",
+                            parts.len()
+                        ),
+                    });
+                }
+                let freq = parts[1]
+                    .parse::<f32>()
+                    .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
+                let dur = parts[2]
+                    .parse::<f32>()
+                    .map_err(|_| ParseError::InvalidNumber(parts[2].to_string()))?;
+                let vol = parts[3]
+                    .parse::<f32>()
+                    .map_err(|_| ParseError::InvalidNumber(parts[3].to_string()))?;
+
+                events.push(Event::Note {
+                    frequency: freq,
+                    duration_seconds: dur,
+                    volume: vol,
+                    waveform,
+                });
+            }
+        }
     }
 
     let bpm = bpm.ok_or_else(|| ParseError::MissingField("bpm".to_string()))?;
-    let samplerate = samplerate.ok_or_else(|| ParseError::MissingField("samplerate".to_string()))?;
+    let samplerate =
+        samplerate.ok_or_else(|| ParseError::MissingField("samplerate".to_string()))?;
 
-    Ok(Song { bpm, samplerate, events })
+    println!("{:?}", events);
+
+    Ok(Song {
+        bpm,
+        samplerate,
+        events,
+    })
 }
-

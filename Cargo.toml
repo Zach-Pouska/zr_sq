@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 # audio playback
-rodio = "0.22.1"
+rodio = "0.22.2"
 # .wav write
 hound = "3.5.1"
 
