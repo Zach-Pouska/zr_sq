@@ -12,16 +12,19 @@ samplerate 44100
 #saw 440.0 5.0 0.8 
 #rest 0.2
 
-sin 60 0.5 0.8
+sqr 60 0.5 0.8
 r 0.5
 
-sin 55 0.5 0.8
+sqr 55 0.5 0.8
 rest 0.5
 
-sin 50 0.5 0.8
+sqr 50 0.5 0.8
 rest 0.5
 
 sin 45 0.5 0.8
+rest 0.5 
+sin 45 0.5 0.8
+r 0.5
 
 
 

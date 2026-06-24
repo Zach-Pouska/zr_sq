@@ -1,24 +1,17 @@
-/// The available waveforms for a note.
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Waveform {
-    Sine,
-    Square,
-    Sawtooth,
-    Triangle,
+/// The part of an event that varies by type.
+#[derive(Debug, PartialEq)]
+pub enum EventKind {
+    Rest,
+    Sine { frequency: f32, volume: f32 },
+    Square { frequency: f32, volume: f32 },
+    Sawtooth { frequency: f32, volume: f32 },
+    Triangle { frequency: f32, volume: f32 },
 }
 
-/// An individual event in the song.
 #[derive(Debug, PartialEq)]
-pub enum Event {
-    Note {
-        frequency: f32,
-        duration_seconds: f32,
-        volume: f32,          // 0.0 – 1.0
-        waveform: Waveform,
-    },
-    Rest {
-        duration_seconds: f32,
-    },
+pub struct Event {
+    pub duration_seconds: f32,
+    pub kind: EventKind,
 }
 
 /// The complete song description.
@@ -28,3 +21,4 @@ pub struct Song {
     pub samplerate: u32,
     pub events: Vec<Event>,
 }
+

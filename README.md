@@ -9,8 +9,6 @@ Unfortunately I got this started by vibecoding with deepseek, but I'm planning o
     - Have a header option for the "tuning ceneter" note - A4 by default 
     - Have a header option for just tuning - perfect ratios, vs logorithmic cents scale
 
-- Clean up messy AI code - condense the file parsing matcher into one function 
-    - Change "waveform" into something more general like "function"
 - Add main loop for live updating of file & playback
 - Add ability to create loops & define musical "functions" within a file, that will play in parallel to the rest of the file
 - Stereo sound

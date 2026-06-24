@@ -8,17 +8,15 @@ use file_parse::parse_song_from_file;
 use synthesis::synthesize_song;
 
 use rodio::{source::Source};
-//use hound::{WavSpec, WavWriter, SampleFormat};
 use hound::{WavSpec, WavWriter};
 use std::time::Duration;
 use std::sync::Arc;
 use std::num::{NonZeroU16, NonZeroU32};
-use std::env;   // for command-line arguments
 use std::process; // for exit
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ---------- Parse command-line arguments ----------
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <input_song_file> [output_wav_file]", args[0]);
         eprintln!("   If output file is omitted, 'output.wav' is used.");
@@ -106,7 +104,6 @@ fn play_audio(samples: &[f32], samplerate: u32) -> Result<(), Box<dyn std::error
     mixer.add(source);
 
     std::thread::sleep(duration);
-
     println!("Ending playback");
 
     Ok(())

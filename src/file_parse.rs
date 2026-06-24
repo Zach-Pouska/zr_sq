@@ -1,11 +1,9 @@
-// file_parse.rs
-
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::fmt;
 
-use crate::types::{Event, Song, Waveform};
+use crate::types::{Event, EventKind, Song};
 
 // ---------- Error Type (manual, zero dependencies) ----------
 #[derive(Debug)]
@@ -46,19 +44,8 @@ impl From<std::io::Error> for ParseError {
     }
 }
 
-// ---------- Waveform parsing: supports both shorthands and full names ----------
-impl Waveform {
-    pub fn from_str(s: &str) -> Result<Self, ParseError> {
-        match s.trim().to_lowercase().as_str() {
-            "sin" | "sine"     => Ok(Waveform::Sine),
-            "sqr" | "square"   => Ok(Waveform::Square),
-            "saw" | "sawtooth" => Ok(Waveform::Sawtooth),
-            "tri" | "triangle" => Ok(Waveform::Triangle),
-            other => Err(ParseError::UnknownWaveform(other.to_string())),
-        }
-    }
-}
-
+/// Parse a song file. Expects optional header lines (`bpm`, `samplerate`)
+/// and event lines: either `rest`/`r <dur>` or `<waveform> <freq> <dur> <vol>`.
 pub fn parse_song_from_file<P: AsRef<Path>>(path: P) -> Result<Song, ParseError> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -87,7 +74,6 @@ pub fn parse_song_from_file<P: AsRef<Path>>(path: P) -> Result<Song, ParseError>
 
         let first = parts[0].to_lowercase();
 
-        // ----- main match – one arm per command type -----
         match first.as_str() {
             "bpm" => {
                 if bpm.is_some() {
@@ -140,12 +126,14 @@ pub fn parse_song_from_file<P: AsRef<Path>>(path: P) -> Result<Song, ParseError>
                 let dur = parts[1]
                     .parse::<f32>()
                     .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
-                events.push(Event::Rest { duration_seconds: dur });
+                events.push(Event {
+                    duration_seconds: dur,
+                    kind: EventKind::Rest,
+                });
             }
 
-            // Anything else is assumed to be a note: <waveform> freq dur vol
+            // Everything else is a note: <waveform> <freq> <dur> <vol>
             _ => {
-                let waveform = Waveform::from_str(parts[0])?;
                 if parts.len() != 4 {
                     return Err(ParseError::InvalidLine {
                         line: line_num,
@@ -155,6 +143,7 @@ pub fn parse_song_from_file<P: AsRef<Path>>(path: P) -> Result<Song, ParseError>
                         ),
                     });
                 }
+
                 let freq = parts[1]
                     .parse::<f32>()
                     .map_err(|_| ParseError::InvalidNumber(parts[1].to_string()))?;
@@ -165,11 +154,17 @@ pub fn parse_song_from_file<P: AsRef<Path>>(path: P) -> Result<Song, ParseError>
                     .parse::<f32>()
                     .map_err(|_| ParseError::InvalidNumber(parts[3].to_string()))?;
 
-                events.push(Event::Note {
-                    frequency: freq,
+                let kind = match first.as_str() {
+                    "sin" | "sine"     => EventKind::Sine    { frequency: freq, volume: vol },
+                    "sqr" | "square"   => EventKind::Square  { frequency: freq, volume: vol },
+                    "saw" | "sawtooth" => EventKind::Sawtooth{ frequency: freq, volume: vol },
+                    "tri" | "triangle" => EventKind::Triangle{ frequency: freq, volume: vol },
+                    other => return Err(ParseError::UnknownWaveform(other.to_string())),
+                };
+
+                events.push(Event {
                     duration_seconds: dur,
-                    volume: vol,
-                    waveform,
+                    kind,
                 });
             }
         }
