@@ -19,6 +19,9 @@ Unfortunately I got this started by vibecoding with deepseek, but I'm planning o
 
 
 # Usage / installation
+Download the source, cd into the directory, run `cargo run <input filename` to synthesize the file.
+
+
 Make sure you have a way to listen to ALSA outputs properly set up, I wasted a good few hours debugging this program at first just to find that I didn't have `pipewire-alsa` installed on my arch linux system.
 
 
@@ -28,7 +31,7 @@ Make sure you have a way to listen to ALSA outputs properly set up, I wasted a g
 Look at `example.music` for more, but to start you can type 
 ```saw 440.0 0.1 0.8``` to play a saw wave at 440hz, for 0.1 seconds, at 0.8 volume (max of 1.0, min of 0)
 
-and rest 
+and `rest 0.5` to rest for 0.5 seconds.
 
 
 
