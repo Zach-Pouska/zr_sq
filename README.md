@@ -1,6 +1,6 @@
 # zr_sq
 Minimalist-ish sequencer that generates audio based on a custom plaintext file format.
-Very inspired by https://strudel.cc
+Very inspired by https://strudel.cc and https://tidalcycles.org/ , just a personal project to get me started with rust
 
 Unfortunately I got this started by vibecoding with deepseek, but I'm planning on that being the only AI assistance for this project as I become more familiar with rust.
 
